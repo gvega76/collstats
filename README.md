@@ -1,5 +1,5 @@
 # collstats
-Get Statistics from collection.stats(), and indexDetails output in JSON format
+Print Statistics for all collections in a database using  `dbcollection.stats( { indexDetails : true } )` output in JSON format
 
 ## To Run
 Change the first two lines, name for database we want statisticss  and provide  name of the cluster
