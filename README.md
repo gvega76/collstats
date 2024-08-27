@@ -11,4 +11,4 @@ var clusterName = "USPROD-2"
 In the Connection String , provide a user that only have **READ ACCESS** with these roles
 _roles: [ "backup", "readAnyDatabase", "clusterMonitor" ]_
 
-> monogsh "connection string" getDBStats.js > ClusterName-ouput.js
+> monogsh "mongodb+srv://connection string" getDBStats.js > ClusterName-ouput.js
