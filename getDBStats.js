@@ -2,8 +2,13 @@
 var StatsOnlyForDB ="sample_training"
 var clusterName = "USPROD-2"
 var cluster = GetClustersSummary()
-var data = JSON.stringify(cluster);
-data = data.replace(/\$/g, '');
+if ( typeof EJSON === "undefined" ) {
+ var data = JSON.stringify(cluster);
+  data = data.replace(/\$/g, '');
+}
+else {
+var data = EJSON.serialize(cluster)
+}
 print(data)
 
 function GetClustersSummary() {
@@ -60,6 +65,7 @@ function GetDatabases() {
          if ( ! name.startsWith("system" )) {
         
         var stats =	db.getSiblingDB(dbname).getCollection(name).stats( { "indexDetails" : true });
+        var latencyStats = db.getSiblingDB(dbname).getCollection(name).aggregate( {$collStats : { latencyStats : { histograms : true } } }).toArray()    
         simpifiedIndexStats = []
         for (var key in stats.indexDetails) {
           simpifiedIndexStats.push({
@@ -76,6 +82,7 @@ function GetDatabases() {
             "wiredTiger": {
               "cache" : stats.wiredTiger.cache,
               "cursor" : stats.wiredTiger.cursor },
+            "latencyStats" : latencyStats,
             "indexDetails" : simpifiedIndexStats
             }
         
