@@ -4,7 +4,6 @@ var clusterName = "USPROD-2"
 var cluster = GetClustersSummary()
 if ( typeof EJSON === "undefined" ) {
  var data = JSON.stringify(cluster);
-  data = data.replace(/\$/g, '');
 }
 else {
 var data = EJSON.serialize(cluster)
