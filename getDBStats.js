@@ -74,16 +74,12 @@ function GetDatabases() {
             "cursor" : stats.indexDetails[key].cursor
           }
         ) }
-        var simplefiedStats = { 
-            "sharded": stats.sharded,
-            "primary": stats.primary,
-            "capped": stats.capped,
-            "wiredTiger": {
-              "cache" : stats.wiredTiger.cache,
-              "cursor" : stats.wiredTiger.cursor },
-            "latencyStats" : latencyStats,
-            "indexDetails" : simpifiedIndexStats
-            }
+        var simplefiedStats = stats
+        simplefiedStats.wiredTiger = {
+           "cache" : stats.wiredTiger.cache,
+           "cursor" : stats.wiredTiger.cursor }
+        simplefiedStats.latencyStats  =  latencyStats
+        simplefiedStats.indexDetails =  simpifiedIndexStats
         
         collections.push({"namespace": dbname+"."+name, "name": name, 
           "indexes": GetIndexesFromCollection(dbname, name), "stats": simplefiedStats});
