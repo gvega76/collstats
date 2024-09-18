@@ -1,14 +1,7 @@
-// Modify first two lines 
-var StatsOnlyForDB ="sample_training"
+
+var StatsOnlyForDB ="sample_airbnb"
 var clusterName = "USPROD-2"
-var cluster = GetClustersSummary()
-if ( typeof EJSON === "undefined" ) {
- var data = JSON.stringify(cluster);
-}
-else {
-var data = EJSON.serialize(cluster)
-}
-print(data)
+
 
 function GetClustersSummary() {
   var cluster = { "cluster": clusterName, "databases": [],
@@ -44,7 +37,6 @@ function GetClustersSummary() {
 }
 
 
-
 function GetDatabases() {
   var databases = [];
   var doc = { "databases": [{ "name": StatsOnlyForDB }] };
@@ -62,9 +54,9 @@ function GetDatabases() {
       names.sort();
       names.forEach(function(name) {
          if ( ! name.startsWith("system" )) {
-        
+
         var stats =	db.getSiblingDB(dbname).getCollection(name).stats( { "indexDetails" : true });
-        var latencyStats = db.getSiblingDB(dbname).getCollection(name).aggregate( {$collStats : { latencyStats : { histograms : true } } }).toArray()    
+        var latencyStats = db.getSiblingDB(dbname).getCollection(name).aggregate( {$collStats : { latencyStats : { histograms : true } } }).toArray()
         simpifiedIndexStats = []
         for (var key in stats.indexDetails) {
           simpifiedIndexStats.push({
@@ -75,13 +67,33 @@ function GetDatabases() {
           }
         ) }
         var simplefiedStats = stats
+        if ( stats.hasOwnProperty("shards") ) {
+         var simplifiedShards = stats.shards
+         for (var key in simplifiedShards) {
+           indexDetails = simplifiedShards[key].indexDetails
+           for ( index_key in indexDetails) {
+             simplifiedShards[key].indexDetails[index_key] = {
+               "cache" : {
+                'bytes currently in the cache': indexDetails[index_key].cache['bytes currently in the cache'],
+                'bytes dirty in the cache cumulative': indexDetails[index_key].cache['bytes dirty in the cache cumulative'],
+                'bytes read into cache': indexDetails[index_key].cache['bytes read into cache'],
+                'bytes written from cache': indexDetails[index_key].cache['bytes written from cache']
+               } 
+             }
+           }
+           simplifiedShards[key].wiredTiger = {
+               "cache" : simplifiedShards[key].wiredTiger.cache,
+               "cursor" : simplifiedShards[key].wiredTiger.cursor}
+         }
+         simplefiedStats.shards = simplifiedShards
+       }
         simplefiedStats.wiredTiger = {
-           "cache" : stats.wiredTiger.cache,
-           "cursor" : stats.wiredTiger.cursor }
+          "cache" : stats.wiredTiger.cache,
+          "cursor" : stats.wiredTiger.cursor }
         simplefiedStats.latencyStats  =  latencyStats
         simplefiedStats.indexDetails =  simpifiedIndexStats
-        
-        collections.push({"namespace": dbname+"."+name, "name": name, 
+
+        collections.push({"namespace": dbname+"."+name, "name": name,
           "indexes": GetIndexesFromCollection(dbname, name), "stats": simplefiedStats});
         }
       });
@@ -137,3 +149,15 @@ function GetIndexesFromCollection(dbname, name) {
   }
   return indexes;
 }
+
+
+var cluster = GetClustersSummary()
+
+if ( typeof EJSON === "undefined" ) {
+ var data = JSON.stringify(cluster);
+ // data = data.replace(/\$/g, '');
+}
+else {
+var data = EJSON.serialize(cluster)
+}
+print(data)
