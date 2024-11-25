@@ -29,6 +29,8 @@ for (var i = 0; i < dbs.length; i++) {
         var stats = {}
         if (! (colls[j].type) || colls[j].type == "collection") {
             stats = currColl.stats();
+            stats.db = dbs[i];
+            stats.coll = colls[j].name;
 
             var latencyStats = currColl.aggregate( {$collStats : { latencyStats : { histograms : true } } }).toArray()
             stats.latencyStats =  latencyStats
