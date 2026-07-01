@@ -97,3 +97,4 @@ print("total_collection_reuse_bytes," + totalCollectionReuseBytes);
 print("total_index_reuse_bytes," + totalIndexReuseBytes);
 print("total_index_size_bytes," + totalIndexSizeBytes);
 print("namespaces_with_unavailable_index_details," + namespacesWithUnavailableIndexDetails);
+
