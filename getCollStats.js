@@ -7,7 +7,8 @@ var sysColls = ["system.roles", "system.users", "system.version", "system.namesp
 for (var i = 0; i < output.databases.length; i++) {
     if ( output.databases[i].name == "admin"
      || output.databases[i].name == "local"
-     || output.databases[i].name == "config" ) {
+    || output.databases[i].name == "config"
+    || output.databases[i].name.startsWith("__mdb_internal") ) {
       continue;
     }
 
@@ -32,7 +33,7 @@ for (var i = 0; i < dbs.length; i++) {
             stats.db = dbs[i];
             stats.coll = colls[j].name;
 
-            var latencyStats = currColl.aggregate( {$collStats : { latencyStats : { histograms : true } } }).toArray()
+            var latencyStats = currColl.aggregate([{$collStats : { latencyStats : { histograms : true } }}]).toArray()
             stats.latencyStats =  latencyStats
 
             delete stats.wiredTiger;
