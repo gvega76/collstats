@@ -1,8 +1,33 @@
 var results = [];
-var totalCollectionReuseBytes = 0;
-var totalIndexReuseBytes = 0;
-var totalIndexSizeBytes = 0;
+var totalCollectionReuseBytes = 0n;
+var totalIndexReuseBytes = 0n;
+var totalIndexSizeBytes = 0n;
 var namespacesWithUnavailableIndexDetails = 0;
+
+function toBigIntBytes(value) {
+  if (value === null || value === undefined) {
+    return 0n;
+  }
+
+  if (typeof value === "bigint") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return BigInt(Math.trunc(value));
+  }
+
+  if (typeof value === "string") {
+    return value ? BigInt(value) : 0n;
+  }
+
+  if (typeof value.toString === "function") {
+    var stringValue = value.toString();
+    return stringValue ? BigInt(stringValue) : 0n;
+  }
+
+  return 0n;
+}
 
 db.getSiblingDB("admin").runCommand({ listDatabases : 1 } ).databases.forEach(d => {
   if (!["admin", "config", "local"].includes(d.name) && !d.name.startsWith("__mdb_internal")) {
@@ -14,9 +39,9 @@ db.getSiblingDB("admin").runCommand({ listDatabases : 1 } ).databases.forEach(d 
         
         if (doc) {
           var ns = doc.ns || "";
-          var collectionReuseBytes = 0;
-          var indexReuseBytes = 0;
-          var totalIndexSize = 0;
+          var collectionReuseBytes = 0n;
+          var indexReuseBytes = 0n;
+          var totalIndexSize = 0n;
           var indexDetailsStatus = "available";
 
           if (
@@ -25,11 +50,13 @@ db.getSiblingDB("admin").runCommand({ listDatabases : 1 } ).databases.forEach(d 
             doc.storageStats.wiredTiger["block-manager"]
           ) {
             collectionReuseBytes =
-              doc.storageStats.wiredTiger["block-manager"]["file bytes available for reuse"] || 0;
+              toBigIntBytes(
+                doc.storageStats.wiredTiger["block-manager"]["file bytes available for reuse"]
+              );
           }
 
           if (doc.storageStats) {
-            totalIndexSize = doc.storageStats.totalIndexSize || 0;
+            totalIndexSize = toBigIntBytes(doc.storageStats.totalIndexSize);
 
             var indexDetails = doc.storageStats.indexDetails;
 
@@ -39,21 +66,25 @@ db.getSiblingDB("admin").runCommand({ listDatabases : 1 } ).databases.forEach(d 
               indexDetails.forEach(function (idx) {
                 idx = idx || {};
                 if (idx["block-manager"]) {
-                  indexReuseBytes += idx["block-manager"]["file bytes available for reuse"] || 0;
+                  indexReuseBytes += toBigIntBytes(
+                    idx["block-manager"]["file bytes available for reuse"]
+                  );
                 }
               });
             } else if (typeof indexDetails === "object") {
               Object.keys(indexDetails).forEach(function (idxName) {
                 var idx = indexDetails[idxName] || {};
                 if (idx["block-manager"]) {
-                  indexReuseBytes += idx["block-manager"]["file bytes available for reuse"] || 0;
+                  indexReuseBytes += toBigIntBytes(
+                    idx["block-manager"]["file bytes available for reuse"]
+                  );
                 }
               });
             } else {
               indexDetailsStatus = "unknown_shape";
             }
 
-            if (indexDetailsStatus === "available" && indexReuseBytes === 0 && totalIndexSize > 0) {
+            if (indexDetailsStatus === "available" && indexReuseBytes === 0n && totalIndexSize > 0n) {
               indexDetailsStatus = "available_zero_reuse";
             }
           } else {
@@ -83,7 +114,13 @@ db.getSiblingDB("admin").runCommand({ listDatabases : 1 } ).databases.forEach(d 
 });
 
 
-results.sort((a, b) => b.totalFreeBytes - a.totalFreeBytes);
+results.sort((a, b) => {
+  if (a.totalFreeBytes === b.totalFreeBytes) {
+    return 0;
+  }
+
+  return a.totalFreeBytes > b.totalFreeBytes ? -1 : 1;
+});
 
 
 print("ns,collection_reuse_bytes,index_reuse_bytes,total_index_size_bytes");
@@ -97,4 +134,5 @@ print("total_collection_reuse_bytes," + totalCollectionReuseBytes);
 print("total_index_reuse_bytes," + totalIndexReuseBytes);
 print("total_index_size_bytes," + totalIndexSizeBytes);
 print("namespaces_with_unavailable_index_details," + namespacesWithUnavailableIndexDetails);
+
 
